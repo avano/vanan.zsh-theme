@@ -1,39 +1,42 @@
 # Glyphs used in the prompt
 typeset -A glyph=(
-    ["prompt"]="󱞫"
-    ["command"]="󱞩"
-    ["separator_left"]="‹"
-    ["separator_right"]="›"
+    ["prompt"]="${VT_GLYPH_PROMPT:-󱞫}"
+    ["command"]="${VT_GLYPH_COMMAND:-󱞩}"
+    ["separator_left"]="${VT_GLYPH_SEPARATOR_LEFT:-‹}"
+    ["separator_right"]="${VT_GLYPH_SEPARATOR_RIGHT:-›}"
 
-    ["git_added"]=""
-    ["git_modified_index"]="✱"
-    ["git_modified_workdir"]="⭘"
-    ["git_deleted_index"]="󰆴"
-    ["git_deleted_workdir"]="󰧧"
-    ["git_renamed"]=""
-    ["git_untracked"]=""
-    ["git_rebase"]="󱌣"
+    ["git_added"]="${VT_GLYPH_GIT_ADDED:-}"
+    ["git_modified_index"]="${VT_GLYPH_GIT_MODIFIED_INDEX:-✱}"
+    ["git_modified_workdir"]="${VT_GLYPH_GIT_MODIFIED_WORKDIR:-⭘}"
+    ["git_deleted_index"]="${VT_GLYPH_GIT_DELETED_INDEX:-󰆴}"
+    ["git_deleted_workdir"]="${VT_GLYPH_GIT_DELETED_WORKDIR:-󰧧}"
+    ["git_renamed"]="${VT_GLYPH_GIT_RENAMED:-}"
+    ["git_untracked"]="${VT_GLYPH_GIT_UNTRACKED:-}"
+    ["git_rebase"]="${VT_GLYPH_GIT_REBASE:-󱌣}"
 )
 
 # Colors used in the prompt
 typeset -A color=(
-    ["normal"]="%F{254}"
-    ["dark"]="%F{242}"
-    ["err"]="%F{196}"
+    ["normal"]="%F{${VT_COLOR_NORMAL:-254}}"
+    ["dark"]="%F{${VT_COLOR_DARK:-242}}"
+    ["err"]="%F{${VT_COLOR_ERR:-196}}"
     ["off"]="%f"
 
-    ["git_branch"]="%F{43}"
-    ["git_added"]="%F{40}"
-    ["git_modified_index"]="%F{172}"
-    ["git_modified_workdir"]="%F{192}"
-    ["git_deleted_index"]="%F{197}"
-    ["git_deleted_workdir"]="%F{160}"
-    ["git_renamed"]="%F{63}"
-    ["git_untracked"]="%F{244}"
+    ["git_branch"]="%F{${VT_COLOR_GIT_BRANCH:-43}}"
+    ["git_added"]="%F{${VT_COLOR_GIT_ADDED:-40}}"
+    ["git_modified_index"]="%F{${VT_COLOR_GIT_MODIFIED_INDEX:-172}}"
+    ["git_modified_workdir"]="%F{${VT_COLOR_GIT_MODIFIED_WORKDIR:-192}}"
+    ["git_deleted_index"]="%F{${VT_COLOR_GIT_DELETED_INDEX:-197}}"
+    ["git_deleted_workdir"]="%F{${VT_COLOR_GIT_DELETED_WORKDIR:-124}}"
+    ["git_renamed"]="%F{${VT_COLOR_GIT_RENAMED:-63}}"
+    ["git_untracked"]="%F{${VT_COLOR_GIT_UNTRACKED:-244}}"
 )
 
 ZLE_RPROMPT_INDENT=0
 VI_MODE="insert"
+
+type zsh-defer > /dev/null 2>&1 && _VT_DEFER=true
+zle -N dirhistory_zle_dirhistory_back > /dev/null 2>&1 && _VT_DIRHISTORY=true
 
 # Gets the git state
 function _vt_git_prompt() {
@@ -58,7 +61,8 @@ function _vt_git_prompt() {
         # root of the git repository
         dir="$(git rev-parse --show-toplevel)"
         git_status="$(git status --porcelain)"
-        git_log="$(git log -1 --pretty=%s@@@%an | tr -d '`')"
+
+        git_log="$(git log -1 --pretty=%s@@@%an 2>/dev/null | tr -d '`')"
         commit_msg="${git_log%%@@@*}"
         commit_author="${git_log#*@@@}"
 
@@ -174,11 +178,9 @@ function _vt_basic_prompt() {
 
 # Create a prompt with full git info once processed
 function _vt_full_prompt() {
-    set -x
     local lprompt="$(_vt_prompt_head)"
     lprompt+="$(_vt_git_prompt)"
     _vt_end_prompt "${lprompt}"
-    set +x
 }
 
 # Custom accept-line function that hides the prompt when executing the command
@@ -206,10 +208,14 @@ function precmd() {
         trap - INT
         kill -SIGINT $$
     ' INT
-    # First show the basic prompt
-    _vt_basic_prompt
-    # Asynchronously display the full prompt
-    zsh-defer _vt_full_prompt
+    if [[ "${_VT_DEFER}" == "true" ]]; then
+        # First show the basic prompt
+        _vt_basic_prompt
+        # Asynchronously display the full prompt
+        zsh-defer _vt_full_prompt
+    else
+        _vt_full_prompt
+    fi
 }
 
 # Handle vi mode change
@@ -225,7 +231,7 @@ function zle-keymap-select() {
 zle -N zle-keymap-select
 
 # If dirhistory plugin is loaded, override its functions to play nicely with the transient prompt
-if zle -l | grep -qE "^dirhistory_zle.*"; then
+if [[ "${_VT_DIRHISTORY}" == "true" ]]; then
     function _vt_dirhistory_back() {
         dirhistory_back
         zle reset-prompt
