@@ -234,19 +234,19 @@ zle -N zle-keymap-select
 if [[ "${_VT_DIRHISTORY}" == "true" ]]; then
     function _vt_dirhistory_back() {
         dirhistory_back
-        zle reset-prompt
+        precmd
     }
     function _vt_dirhistory_forward() {
         dirhistory_forward
-        zle reset-prompt
+        precmd
     }
     function _vt_dirhistory_up() {
         dirhistory_up
-        zle reset-prompt
+        precmd
     }
     function _vt_dirhistory_down() {
         dirhistory_down
-        zle reset-prompt
+        precmd
     }
     zle -N _vt_dirhistory_back
     zle -N _vt_dirhistory_forward
