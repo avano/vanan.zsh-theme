@@ -163,7 +163,13 @@ function _vt_prompt_head() {
         if [[ -n ${branch} && ${branch} != "HEAD" ]]; then
             git_basic+="${branch}"
         else
-            git_basic+="󰜘$(git rev-parse --short HEAD)"
+            git_basic+="󰜘"
+            local git_tag="$(git tag --points-at HEAD)"
+            if [[ -n "${git_tag}" ]]; then
+                git_basic+="${git_tag}"
+            else
+                git_basic+="$(git rev-parse --short HEAD)"
+            fi
         fi
     fi
 
