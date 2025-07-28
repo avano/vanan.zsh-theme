@@ -20,6 +20,7 @@ typeset -A color=(
     ["normal"]="%F{${VT_COLOR_NORMAL:-254}}"
     ["dark"]="%F{${VT_COLOR_DARK:-242}}"
     ["err"]="%F{${VT_COLOR_ERR:-196}}"
+    ["remote"]="%F{${VT_COLOR_REMOTE:-190}}"
     ["off"]="%f"
 
     ["git_branch"]="%F{${VT_COLOR_GIT_BRANCH:-43}}"
@@ -173,8 +174,16 @@ function _vt_prompt_head() {
         fi
     fi
 
-    # The format is <normal or err color, based on the last command return code><prompt glyph> <dark color><left separator>user@hostname<right separator> <normal color><pwd> <git branch or commit>
-    echo "%(?.${color[normal]}.${color[err]})${glyph[prompt]} ${color[dark]}${glyph[separator_left]}%n@%m${glyph[separator_right]} ${color[normal]}%~${color[git_branch]}${git_basic}"
+    # The format is:
+    # <normal or err color, based on the last command return code><prompt glyph>
+    # <dark(local)/remote(ssh) color><left separator>user@hostname<right separator>
+    # <normal color><pwd>
+    # <git branch or commit>
+    local hostname_color="${color[dark]}"
+    if [[ -n "${SSH_CONNECTION}" ]]; then
+        hostname_color="${color[remote]}"
+    fi
+    echo "%(?.${color[normal]}.${color[err]})${glyph[prompt]} ${hostname_color}${glyph[separator_left]}%n@%m${glyph[separator_right]} ${color[normal]}%~${color[git_branch]}${git_basic}"
 }
 
 # Create a basic prompt that is displayed first
